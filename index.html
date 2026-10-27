@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101319">
+<meta name="color-scheme" content="dark">
+<title>Verbos</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#101319;--panel:#181c25;--line:#262c3a;--text:#e9ecf3;--muted:#8c95a8;--gold:#f2b84b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 12px 10px}
+.bar{display:flex;gap:8px;align-items:center}
+input,select,button{font:inherit;color:var(--text)}
+#q{flex:1;min-width:0;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%238c95a8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='M13 13l4 4'/%3E%3C/svg%3E") no-repeat 12px center;padding:0 12px 0 38px}
+select{height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel);padding:0 8px;max-width:9.5rem}
+#verbScreenTense{flex:1}
+.icon-btn{width:44px;height:44px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;cursor:pointer}
+.icon-btn svg{width:22px;height:22px;stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+main>section{display:none}
+[data-screen=home] #home,[data-screen=cat] #cat,[data-screen=verb] #verb{display:block}
+[data-screen=home] #tenseSel,[data-screen=home] #backBtn,[data-screen=cat] #backBtn,[data-screen=cat] #gearBtn,[data-screen=verb] #q,[data-screen=verb] #gearBtn{display:none}
+[data-screen=verb] #tenseSel{flex:1}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:10px 16px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+.row:active{background:var(--panel)}
+.row b{font-weight:600;font-size:1.05rem;display:block}
+.row small,.muted{color:var(--muted);font-size:.85rem}
+.row svg{width:18px;height:18px;flex:none;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.crumb{display:flex;align-items:center;gap:6px;padding:14px 16px 6px;color:var(--muted);text-decoration:none}
+.crumb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.empty{padding:32px 16px;text-align:center;color:var(--muted)}
+.vhead{padding:18px 16px 6px}
+.vhead h1{margin:0;font:600 2.2rem/1.1 Georgia,"Iowan Old Style","Times New Roman",serif}
+.vhead p{margin:6px 0 0}
+.note{margin:12px 16px 0;padding:10px 12px;border-left:3px solid var(--gold);background:var(--panel);border-radius:0 10px 10px 0;font-size:.88rem;color:var(--muted)}
+.cards{padding:14px 12px 28px}
+.card{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 10px;cursor:pointer}
+.card.playing{border-color:var(--gold)}
+.pn{display:block;font-size:.8rem;color:var(--muted);margin-bottom:2px}
+.es{display:block;font-size:1.12rem;line-height:1.4}
+.en{display:block;color:var(--muted);margin-top:4px;font-size:.95rem}
+mark{background:none;color:var(--gold);font-weight:700}
+#sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:none;align-items:flex-end}
+#sheet.open{display:flex}
+.panel{width:100%;background:var(--panel);border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.panel h2{margin:0 0 14px;font-size:1.1rem}
+.panel input[type=range]{width:100%;accent-color:var(--gold)}
+.btns{display:flex;gap:10px;margin-top:16px}
+.btns button{flex:1;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);cursor:pointer}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#2a3040;padding:10px 16px;border-radius:12px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body data-screen="home">
+<header>
+  <div class="bar">
+    <button class="icon-btn" id="backBtn" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <input id="q" type="search" placeholder="Search verbs" autocomplete="off" autocapitalize="off" enterkeyhint="search" aria-label="Search verbs">
+    <select id="levelSel" aria-label="Level"></select>
+    <select id="tenseSel" aria-label="Tense"></select>
+    <button class="icon-btn" id="gearBtn" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+</header>
+<main>
+  <section id="home"></section>
+  <section id="cat"></section>
+  <section id="verb"></section>
+</main>
+<div id="sheet" aria-hidden="true">
+  <div class="panel" role="dialog" aria-label="Settings">
+    <h2>Pronunciation speed: <span id="speedVal"></span></h2>
+    <input id="speed" type="range" min="0.5" max="1.25" step="0.05" aria-label="Pronunciation speed">
+    <div class="btns"><button id="testBtn">Test voice</button><button id="doneBtn">Done</button></div>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+<script src="data.js"></script>
+<script>
+const V = SPANISH_VERBS_DATA;
+const PATTERNS = [
+  ['regular','Regular'],['spelling','Spelling changing'],['stem','Stem changing'],['irreg-yo','Irregular yo'],
+  ['irreg-stems','Irregular preterite and future'],['fully-irregular','Fully irregular'],['gustar-type','Gustar-type and impersonal']
+];
+const TENSE_LABEL = {
+  presente_indicativo:'Present',presente_continuo:'Present continuous',futuro_cercano:'Near future (ir a)',
+  preterito_perfecto:'Present perfect',preterito_indefinido:'Preterite',preterito_imperfecto:'Imperfect',
+  futuro_simple:'Future',condicional_simple:'Conditional',preterito_pluscuamperfecto:'Past perfect',
+  presente_subjuntivo:'Subjunctive',imperativo_afirmativo:'Imperative'
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const CHEV = '<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
+const BACK = '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>';
+
+const S = { level:'A1', tense:'presente_indicativo', speed:0.9, q:'', cq:'', catKey:null };
+try { Object.assign(S, JSON.parse(localStorage.getItem('verbos-prefs') || '{}'), { q:'', cq:'', catKey:null }); } catch (e) {}
+const save = () => { try { localStorage.setItem('verbos-prefs', JSON.stringify({ level:S.level, tense:S.tense, speed:S.speed })); } catch (e) {} };
+
+// tenses and levels come from the data itself
+const TENSES = {};
+Object.entries(V[0].tenses).forEach(([k, t]) => { TENSES[k] = { level:t.level, label:TENSE_LABEL[k] || t.name || k }; });
+const LEVELS = [...new Set(Object.values(TENSES).map(t => t.level))].sort();
+if (!LEVELS.includes(S.level)) S.level = LEVELS[0];
+
+function fillSelects() {
+  $('levelSel').innerHTML = LEVELS.map(l => `<option value="${l}">${l}</option>`).join('');
+  $('levelSel').value = S.level;
+  const keys = Object.keys(TENSES).filter(k => TENSES[k].level === S.level);
+  if (!keys.includes(S.tense)) S.tense = keys[0];
+  $('tenseSel').innerHTML = keys.map(k => `<option value="${k}">${esc(TENSES[k].label)}</option>`).join('');
+  $('tenseSel').value = S.tense;
+}
+
+const verbRow = (v, showCat) => {
+  const cat = showCat ? ' (' + (PATTERNS.find(p => p[0] === v.pattern) || ['', ''])[1] + ')' : '';
+  return `<a class="row" href="#/verb/${encodeURIComponent(v.verb)}"><div><b>${esc(v.verb)}</b><small>${esc(v.meaning || '')}${esc(cat)}</small></div>${CHEV}</a>`;
+};
+const matches = (v, q) => !q || norm(v.verb).includes(norm(q)) || norm(v.meaning || '').includes(norm(q));
+const byName = (a, b) => a.verb.localeCompare(b.verb, 'es');
+
+function renderHome() {
+  const q = S.q.trim();
+  if (q) {
+    const list = V.filter(v => matches(v, q)).sort(byName);
+    $('home').innerHTML = list.length ? list.map(v => verbRow(v, true)).join('') : '<div class="empty">No verbs match your search.</div>';
+    return;
+  }
+  $('home').innerHTML = PATTERNS.map(([key, label]) => {
+    const n = V.filter(v => v.pattern === key).length;
+    return n ? `<a class="row" href="#/cat/${key}"><div><b>${esc(label)}</b><small>${n} verbs</small></div>${CHEV}</a>` : '';
+  }).join('');
+}
+
+function renderCat() {
+  const p = PATTERNS.find(x => x[0] === S.catKey);
+  const list = V.filter(v => v.pattern === S.catKey && matches(v, S.cq)).sort(byName);
+  $('cat').innerHTML = `<a class="crumb" href="#/">${BACK}<span>${esc(p[1])}</span></a>` +
+    (list.length ? list.map(v => verbRow(v, false)).join('') : '<div class="empty">No verbs match your search.</div>');
+}
+
+function highlight(sentence, form) {
+  let html = esc(sentence);
+  for (const f of [form, ...form.split(' / ')]) {
+    const re = new RegExp('(?<![\\p{L}])(' + f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')(?![\\p{L}])', 'iu');
+    if (re.test(html)) return html.replace(re, '<mark>$1</mark>');
+  }
+  return html;
+}
+
+function renderVerb(name) {
+  const v = V.find(x => x.verb === name);
+  const t = v.tenses[S.tense];
+  const cards = t ? t.conjugations.filter(c => c.sentence && c.sentence !== '—').map((c, i) =>
+    `<div class="card" role="button" tabindex="0" data-i="${i}"><span class="pn">${esc(c.pronoun)}</span><span class="es">${highlight(c.sentence, c.form)}</span><span class="en">${esc(c.translation)}</span></div>`).join('') : '';
+  $('verb').innerHTML = `<div class="vhead"><h1>${esc(v.verb)}</h1><p class="muted">${esc(v.meaning || '')}</p></div>` +
+    (v.usageNote ? `<div class="note">${esc(v.usageNote)}</div>` : '') + `<div class="cards">${cards}</div>`;
+  const rows = t ? t.conjugations.filter(c => c.sentence && c.sentence !== '—') : [];
+  $('verb').querySelectorAll('.card').forEach(el => {
+    const go = () => speak(rows[+el.dataset.i].sentence, el);
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+}
+
+// ---------- speech ----------
+let voices = [];
+if ('speechSynthesis' in window) {
+  const load = () => { voices = speechSynthesis.getVoices().filter(v => /^es/i.test(v.lang)); };
+  load(); speechSynthesis.addEventListener('voiceschanged', load);
+}
+function speak(text, el) {
+  if (!('speechSynthesis' in window)) return toast('Speech is not supported on this device.');
+  speechSynthesis.cancel();
+  document.querySelectorAll('.card.playing').forEach(c => c.classList.remove('playing'));
+  const u = new SpeechSynthesisUtterance(text.replace(/[«»¡¿]/g, ''));
+  const voice = voices.find(v => /es-(MX|US|419)/i.test(v.lang)) || voices[0];
+  u.lang = voice ? voice.lang : 'es-419'; if (voice) u.voice = voice;
+  u.rate = S.speed;
+  if (el) { el.classList.add('playing'); u.onend = u.onerror = () => el.classList.remove('playing'); }
+  speechSynthesis.speak(u);
+  if (!voices.length) setTimeout(() => { if (!voices.length) toast('No Spanish voice found. Install one in your phone\u2019s text-to-speech settings.'); }, 600);
+}
+let toastTimer;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200); }
+
+// ---------- routing ----------
+function route() {
+  const [a, b] = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
+  let screen = 'home';
+  if (a === 'cat' && PATTERNS.some(p => p[0] === b)) {
+    if (S.catKey !== b) { S.catKey = b; S.cq = ''; }
+    screen = 'cat'; $('q').value = S.cq; renderCat();
+  } else if (a === 'verb' && V.some(v => v.verb === b)) {
+    screen = 'verb'; renderVerb(b); window.scrollTo(0, 0);
+  } else { $('q').value = S.q; renderHome(); }
+  document.body.dataset.screen = screen;
+}
+
+$('q').addEventListener('input', e => {
+  const scr = document.body.dataset.screen;
+  if (scr === 'home') { S.q = e.target.value; renderHome(); } else { S.cq = e.target.value; renderCat(); }
+});
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+$('levelSel').addEventListener('change', e => { S.level = e.target.value; fillSelects(); save(); refreshVerb(); });
+$('tenseSel').addEventListener('change', e => { S.tense = e.target.value; save(); refreshVerb(); });
+function refreshVerb() {
+  if (document.body.dataset.screen === 'verb') renderVerb(decodeURIComponent(location.hash.split('/')[2]));
+}
+$('backBtn').addEventListener('click', () => { history.length > 1 ? history.back() : (location.hash = '#/'); });
+
+// ---------- settings ----------
+const sheet = $('sheet');
+const showSpeed = () => { $('speedVal').textContent = S.speed.toFixed(2) + 'x'; };
+$('speed').value = S.speed; showSpeed();
+$('gearBtn').addEventListener('click', () => { sheet.classList.add('open'); });
+$('doneBtn').addEventListener('click', () => sheet.classList.remove('open'));
+sheet.addEventListener('click', e => { if (e.target === sheet) sheet.classList.remove('open'); });
+$('speed').addEventListener('input', e => { S.speed = +e.target.value; showSpeed(); save(); });
+$('testBtn').addEventListener('click', () => speak('Hola, \u00bfc\u00f3mo est\u00e1s? Me gusta aprender espa\u00f1ol.'));
+
+fillSelects();
+window.addEventListener('hashchange', route);
+route();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => { navigator.serviceWorker.register("./sw.js"); });
+}
+</script>
+</body>
+</html>
